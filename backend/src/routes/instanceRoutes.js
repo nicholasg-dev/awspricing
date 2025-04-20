@@ -33,4 +33,25 @@ router.get('/price-history/:region/:instanceType', instanceController.getPriceHi
  */
 router.post('/calculate-savings', instanceController.calculateSavings);
 
+/**
+ * @route   GET /api/instance-specs/:instanceType
+ * @desc    Get detailed specifications for a specific instance type
+ * @access  Public
+ */
+router.get('/instance-specs/:instanceType', instanceController.getInstanceSpecs);
+
+/**
+ * @route   GET /api/reserved-terms
+ * @desc    Get available reserved instance terms and payment options
+ * @access  Public
+ */
+router.get('/reserved-terms', instanceController.getReservedTerms);
+
+/**
+ * @route   GET /api/export/:region
+ * @desc    Export instance data as CSV or JSON
+ * @access  Public
+ */
+router.get('/export/:region', instanceController.exportData);
+
 module.exports = router;
