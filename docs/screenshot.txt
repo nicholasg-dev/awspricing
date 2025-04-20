@@ -1,0 +1,13 @@
+This is a placeholder for the screenshot.
+
+In a real project, you would replace this with an actual screenshot of the application.
+The screenshot should show the main interface of the AWS EC2 Instance Pricing Tool,
+including the data grid with instance pricing and some of the enhanced features like
+the price history chart or savings calculator.
+
+To create a screenshot:
+1. Run the application in development mode
+2. Navigate to http://localhost:3000 in your browser
+3. Take a screenshot of the application interface
+4. Save the screenshot as 'screenshot.png' in this directory
+5. Update the README.md file to reference this screenshot
