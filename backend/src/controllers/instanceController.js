@@ -82,17 +82,37 @@ async function fetchEC2Prices(region, os) {
     const instances = [];
 
     for (const product of Object.values(products.PriceList)) {
-      const productData = JSON.parse(product);
+      let productData;
+      try {
+        // Check if product is already an object or a JSON string
+        productData = typeof product === 'string' ? JSON.parse(product) : product;
+      } catch (e) {
+        console.error('Error parsing product data:', e);
+        continue; // Skip this product if parsing fails
+      }
+
+      // Check if productData has the expected structure
+      if (!productData || !productData.attributes || !productData.terms) {
+        console.error('Invalid product data structure');
+        continue;
+      }
+
       const { attributes, terms } = productData;
 
       // Skip if not an EC2 instance
-      if (attributes.servicecode !== 'AmazonEC2') continue;
+      if (!attributes.servicecode || attributes.servicecode !== 'AmazonEC2') continue;
 
       // Extract instance details
+      // Check if required attributes exist
+      if (!attributes.instanceType || !attributes.vcpu || !attributes.memory) {
+        console.error('Missing required instance attributes');
+        continue;
+      }
+
       const instanceType = attributes.instanceType;
       const vCPU = attributes.vcpu;
       const memory = attributes.memory;
-      const networkPerformance = attributes.networkPerformance;
+      const networkPerformance = attributes.networkPerformance || 'Unknown';
 
       // Extract pricing information
       let onDemandPrice = null;
@@ -118,10 +138,22 @@ async function fetchEC2Prices(region, os) {
         }
       }
 
+      // Parse memory value safely
+      let memoryGiB = 0;
+      try {
+        if (typeof memory === 'string' && memory.includes('GiB')) {
+          memoryGiB = parseFloat(memory.replace(' GiB', ''));
+        } else if (typeof memory === 'string') {
+          memoryGiB = parseFloat(memory);
+        }
+      } catch (e) {
+        console.error('Error parsing memory value:', e);
+      }
+
       instances.push({
         instanceType,
-        vCPU: parseInt(vCPU),
-        memoryGiB: parseFloat(memory.replace(' GiB', '')),
+        vCPU: parseInt(vCPU) || 0,
+        memoryGiB,
         networkPerformance,
         os,
         onDemand: onDemandPrice,
