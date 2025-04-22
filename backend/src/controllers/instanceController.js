@@ -2,6 +2,7 @@
  * Controller for EC2 instance-related endpoints
  */
 const AWS = require('aws-sdk');
+const PriceHistory = require('../models/PriceHistory');
 
 // Cache structure: { [region]: { data: null, timestamp: 0 } }
 let cache = {};
@@ -270,41 +271,95 @@ exports.getInstances = async (req, res) => {
  */
 exports.getPriceHistory = async (req, res) => {
   const { region, instanceType } = req.params;
+  const { days = 30, os = 'Linux' } = req.query;
 
   if (!AWS_REGIONS[region]) {
     return res.status(400).json({ error: 'Invalid region' });
   }
 
   try {
-    // In a real application, this would fetch from a database
-    // For now, we'll generate mock data
-    const now = new Date();
-    const history = [];
+    // Get price history from database
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
 
-    // Generate 30 days of mock data
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
+    let history = await PriceHistory.find({
+      instanceType,
+      region,
+      os,
+      timestamp: { $gte: startDate }
+    }).sort({ timestamp: 1 });
 
-      // Generate random prices with some variation
-      const onDemandPrice = 0.1 + (Math.random() * 0.02 - 0.01);
-      const spotPrice = onDemandPrice * (0.3 + Math.random() * 0.1);
+    // If no history found, generate initial data and store it
+    if (history.length === 0) {
+      console.log(`No price history found for ${instanceType} in ${region}. Generating initial data...`);
 
-      history.push({
-        timestamp: date.toISOString(),
-        instanceType,
-        region,
-        priceType: 'onDemand',
-        price: onDemandPrice
-      });
+      // Get current prices
+      const ondemandReserved = await fetchEC2Prices(region, os);
+      const spotPrices = await fetchSpotPrices(region, os);
 
-      history.push({
-        timestamp: date.toISOString(),
-        instanceType,
-        region,
-        priceType: 'spot',
-        price: spotPrice
-      });
+      // Find the instance
+      const instance = ondemandReserved.find(i => i.instanceType === instanceType);
+      const spotPrice = spotPrices[instanceType]?.price || null;
+
+      if (instance) {
+        const now = new Date();
+        const initialHistory = [];
+
+        // Generate 30 days of historical data with slight variations
+        for (let i = 0; i < parseInt(days); i++) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+
+          // Add small random variations to simulate price changes
+          const variation = 0.05; // 5% variation
+          const onDemandVariation = 1 + ((Math.random() * variation * 2) - variation);
+          const spotVariation = 1 + ((Math.random() * variation * 2) - variation);
+
+          // Create on-demand price history
+          if (instance.onDemand) {
+            const onDemandPrice = instance.onDemand * onDemandVariation;
+            initialHistory.push({
+              instanceType,
+              region,
+              os,
+              priceType: 'onDemand',
+              price: onDemandPrice,
+              timestamp: date
+            });
+          }
+
+          // Create spot price history
+          if (spotPrice) {
+            const adjustedSpotPrice = spotPrice * spotVariation;
+            initialHistory.push({
+              instanceType,
+              region,
+              os,
+              priceType: 'spot',
+              price: adjustedSpotPrice,
+              timestamp: date
+            });
+          }
+
+          // Create reserved price history (doesn't change as often)
+          if (instance.reserved && i % 7 === 0) { // Only every 7 days for reserved
+            initialHistory.push({
+              instanceType,
+              region,
+              os,
+              priceType: 'reserved',
+              price: instance.reserved,
+              timestamp: date
+            });
+          }
+        }
+
+        // Save the generated history to the database
+        if (initialHistory.length > 0) {
+          await PriceHistory.insertMany(initialHistory);
+          history = initialHistory;
+        }
+      }
     }
 
     res.json(history);

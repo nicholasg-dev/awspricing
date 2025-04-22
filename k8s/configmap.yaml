@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-pricing-config
+  namespace: aws-pricing-tool
+data:
+  NODE_ENV: "production"
+  PORT: "4000"
+  MONGODB_URI: "mongodb://mongodb:27017/aws-pricing-tool"
+  AWS_REGION: "us-east-1"
+  PRICE_UPDATE_SCHEDULE: "0 */6 * * *"  # Every 6 hours
+  ALERT_CHECK_SCHEDULE: "0 */1 * * *"   # Every hour

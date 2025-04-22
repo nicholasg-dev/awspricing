@@ -15,8 +15,27 @@ import {
     Tabs,
     Tab,
     Grid,
-    Paper
+    Paper,
+    Container,
+    useMediaQuery,
+    useTheme,
+    Drawer,
+    AppBar,
+    Toolbar,
+    IconButton,
+    Divider,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText
 } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import TableViewIcon from '@mui/icons-material/TableView';
+import HistoryIcon from '@mui/icons-material/History';
+import CompareIcon from '@mui/icons-material/Compare';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import CalculateIcon from '@mui/icons-material/Calculate';
 import {
     PriceHistory,
     SavingsCalculator,
@@ -26,6 +45,10 @@ import {
 import './App.css';
 
 function App() {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const [drawerOpen, setDrawerOpen] = useState(false);
+
     const [rows, setRows] = useState([]);
     const [regions, setRegions] = useState([]);
     const [selectedRegion, setSelectedRegion] = useState('');
@@ -37,6 +60,10 @@ function App() {
     const [activeTab, setActiveTab] = useState(0);
     const [selectedInstances, setSelectedInstances] = useState([]);
     const [priceHistory, setPriceHistory] = useState([]);
+
+    const handleDrawerToggle = () => {
+        setDrawerOpen(!drawerOpen);
+    };
 
     // Fetch regions on component mount
     useEffect(() => {
@@ -147,126 +174,253 @@ function App() {
         }
     }, [selectedInstances, selectedRegion]);
 
+    // Drawer content
+    const drawerWidth = 240;
+    const drawerContent = (
+        <Box sx={{ width: drawerWidth }}>
+            <Box sx={{ p: 2 }}>
+                <Typography variant="h6" noWrap component="div">
+                    AWS Pricing Tool
+                </Typography>
+            </Box>
+            <Divider />
+            <List>
+                <ListItem disablePadding>
+                    <ListItemButton selected={activeTab === 0} onClick={() => setActiveTab(0)}>
+                        <ListItemIcon>
+                            <TableViewIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Pricing" />
+                    </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                    <ListItemButton selected={activeTab === 1} onClick={() => setActiveTab(1)}>
+                        <ListItemIcon>
+                            <HistoryIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Price History" />
+                    </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                    <ListItemButton selected={activeTab === 2} onClick={() => setActiveTab(2)}>
+                        <ListItemIcon>
+                            <CompareIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Compare" />
+                    </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                    <ListItemButton selected={activeTab === 3} onClick={() => setActiveTab(3)}>
+                        <ListItemIcon>
+                            <NotificationsIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Alerts" />
+                    </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                    <ListItemButton selected={activeTab === 4} onClick={() => setActiveTab(4)}>
+                        <ListItemIcon>
+                            <CalculateIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Calculator" />
+                    </ListItemButton>
+                </ListItem>
+            </List>
+        </Box>
+    );
+
     return (
-        <Box sx={{ p: 4 }}>
-            <Typography variant="h4" gutterBottom>AWS EC2 Instance Pricing</Typography>
-
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-            )}
-
-            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                <FormControl sx={{ minWidth: 200 }}>
-                    <InputLabel>Region</InputLabel>
-                    <Select
-                        value={selectedRegion}
-                        label="Region"
-                        onChange={e => setSelectedRegion(e.target.value)}
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            {/* App Bar */}
+            <AppBar position="static">
+                <Toolbar>
+                    <IconButton
+                        color="inherit"
+                        aria-label="open drawer"
+                        edge="start"
+                        onClick={handleDrawerToggle}
+                        sx={{ mr: 2, display: { md: 'none' } }}
                     >
-                        {regions.map(region => (
-                            <MenuItem key={region.id} value={region.id}>
-                                {region.name}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                        <MenuIcon />
+                    </IconButton>
+                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                        AWS EC2 Instance Pricing
+                    </Typography>
+                </Toolbar>
+            </AppBar>
 
-                <FormControl>
-                    <InputLabel>OS</InputLabel>
-                    <Select
-                        value={os}
-                        label="OS"
-                        onChange={e => setOs(e.target.value)}
+            {/* Main content */}
+            <Box sx={{ display: 'flex', flex: 1 }}>
+                {/* Sidebar for desktop */}
+                {!isMobile && (
+                    <Box
+                        component="nav"
+                        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
                     >
-                        <MenuItem value="">All</MenuItem>
-                        <MenuItem value="Linux">Linux</MenuItem>
-                        <MenuItem value="Windows">Windows</MenuItem>
-                    </Select>
-                </FormControl>
+                        <Drawer
+                            variant="permanent"
+                            sx={{
+                                display: { xs: 'none', md: 'block' },
+                                '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                            }}
+                            open
+                        >
+                            {drawerContent}
+                        </Drawer>
+                    </Box>
+                )}
 
-                <FormControl>
-                    <InputLabel>Pricing</InputLabel>
-                    <Select
-                        value={pricing}
-                        label="Pricing"
-                        onChange={e => setPricing(e.target.value)}
-                    >
-                        <MenuItem value="">All</MenuItem>
-                        <MenuItem value="onDemand">On-Demand</MenuItem>
-                        <MenuItem value="reserved">Reserved</MenuItem>
-                        <MenuItem value="spot">Spot</MenuItem>
-                    </Select>
-                </FormControl>
-            </Box>
+                {/* Temporary drawer for mobile */}
+                <Drawer
+                    variant="temporary"
+                    open={drawerOpen}
+                    onClose={handleDrawerToggle}
+                    ModalProps={{ keepMounted: true }}
+                    sx={{
+                        display: { xs: 'block', md: 'none' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+                    }}
+                >
+                    {drawerContent}
+                </Drawer>
 
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <Tabs value={activeTab} onChange={handleTabChange}>
-                    <Tab label="Pricing" />
-                    <Tab label="History" />
-                    <Tab label="Compare" />
-                    <Tab label="Alerts" />
-                    <Tab label="Calculator" />
-                </Tabs>
-            </Box>
+                {/* Main content area */}
+                <Container maxWidth="xl" sx={{ mt: 3, mb: 3, flex: 1 }}>
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+                    )}
 
-            <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
-                {activeTab === 0 && (
-                    <div style={{ height: 600, width: '100%' }}>
-                        {loading ? (
-                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                                <CircularProgress />
-                            </Box>
-                        ) : (
-                            <DataGrid
-                                rows={filteredRows}
-                                columns={columns}
-                                pageSize={20}
-                                rowsPerPageOptions={[20, 50, 100]}
-                                checkboxSelection
-                                onRowSelectionModelChange={handleInstanceSelection}
-                                components={{
-                                    Toolbar: GridToolbar
-                                }}
-                                density="compact"
+                    {/* Filters */}
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth>
+                                <InputLabel>Region</InputLabel>
+                                <Select
+                                    value={selectedRegion}
+                                    label="Region"
+                                    onChange={e => setSelectedRegion(e.target.value)}
+                                >
+                                    {regions.map(region => (
+                                        <MenuItem key={region.id} value={region.id}>
+                                            {region.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Grid item xs={6} sm={4}>
+                            <FormControl fullWidth>
+                                <InputLabel>OS</InputLabel>
+                                <Select
+                                    value={os}
+                                    label="OS"
+                                    onChange={e => setOs(e.target.value)}
+                                >
+                                    <MenuItem value="">All</MenuItem>
+                                    <MenuItem value="Linux">Linux</MenuItem>
+                                    <MenuItem value="Windows">Windows</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+
+                        <Grid item xs={6} sm={4}>
+                            <FormControl fullWidth>
+                                <InputLabel>Pricing</InputLabel>
+                                <Select
+                                    value={pricing}
+                                    label="Pricing"
+                                    onChange={e => setPricing(e.target.value)}
+                                >
+                                    <MenuItem value="">All</MenuItem>
+                                    <MenuItem value="onDemand">On-Demand</MenuItem>
+                                    <MenuItem value="reserved">Reserved</MenuItem>
+                                    <MenuItem value="spot">Spot</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+
+                    {/* Tabs for mobile */}
+                    {isMobile && (
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                            <Tabs
+                                value={activeTab}
+                                onChange={handleTabChange}
+                                variant="scrollable"
+                                scrollButtons="auto"
+                            >
+                                <Tab label="Pricing" />
+                                <Tab label="History" />
+                                <Tab label="Compare" />
+                                <Tab label="Alerts" />
+                                <Tab label="Calculator" />
+                            </Tabs>
+                        </Box>
+                    )}
+
+                    {/* Main content */}
+                    <Paper elevation={3} sx={{ p: { xs: 1, sm: 2 }, mb: 2 }}>
+                        {activeTab === 0 && (
+                            <div style={{ height: 600, width: '100%' }}>
+                                {loading ? (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                                        <CircularProgress />
+                                    </Box>
+                                ) : (
+                                    <DataGrid
+                                        rows={filteredRows}
+                                        columns={columns}
+                                        pageSize={20}
+                                        rowsPerPageOptions={[20, 50, 100]}
+                                        checkboxSelection
+                                        onRowSelectionModelChange={handleInstanceSelection}
+                                        components={{
+                                            Toolbar: GridToolbar
+                                        }}
+                                        density="compact"
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 1 && (
+                            <PriceHistory
+                                instanceType={selectedInstances.length > 0 ? selectedInstances[0].instanceType : ''}
+                                region={selectedRegion}
+                                data={priceHistory}
+                                os={selectedInstances.length > 0 ? selectedInstances[0].os : 'Linux'}
                             />
                         )}
-                    </div>
-                )}
 
-                {activeTab === 1 && (
-                    <PriceHistory
-                        instanceType={selectedInstances.length > 0 ? selectedInstances[0].instanceType : ''}
-                        region={selectedRegion}
-                        data={priceHistory}
-                    />
-                )}
+                        {activeTab === 2 && (
+                            <InstanceComparison instances={selectedInstances} />
+                        )}
 
-                {activeTab === 2 && (
-                    <InstanceComparison instances={selectedInstances} />
-                )}
+                        {activeTab === 3 && (
+                            <PriceAlerts
+                                instanceType={selectedInstances.length > 0 ? selectedInstances[0].instanceType : ''}
+                                region={selectedRegion}
+                                os={selectedInstances.length > 0 ? selectedInstances[0].os : ''}
+                            />
+                        )}
 
-                {activeTab === 3 && (
-                    <PriceAlerts
-                        instanceType={selectedInstances.length > 0 ? selectedInstances[0].instanceType : ''}
-                        region={selectedRegion}
-                        os={selectedInstances.length > 0 ? selectedInstances[0].os : ''}
-                    />
-                )}
+                        {activeTab === 4 && (
+                            <SavingsCalculator
+                                instanceType={selectedInstances.length > 0 ? selectedInstances[0].instanceType : ''}
+                                region={selectedRegion}
+                                os={selectedInstances.length > 0 ? selectedInstances[0].os : ''}
+                            />
+                        )}
 
-                {activeTab === 4 && (
-                    <SavingsCalculator
-                        instanceType={selectedInstances.length > 0 ? selectedInstances[0].instanceType : ''}
-                        region={selectedRegion}
-                        os={selectedInstances.length > 0 ? selectedInstances[0].os : ''}
-                    />
-                )}
-
-                {activeTab !== 0 && selectedInstances.length === 0 && (
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                        Select an instance from the Pricing tab to view detailed information.
-                    </Alert>
-                )}
-            </Paper>
+                        {activeTab !== 0 && selectedInstances.length === 0 && (
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                                Select an instance from the Pricing tab to view detailed information.
+                            </Alert>
+                        )}
+                    </Paper>
+                </Container>
+            </Box>
         </Box>
     );
 }

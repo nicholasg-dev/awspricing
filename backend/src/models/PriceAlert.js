@@ -1,70 +1,114 @@
 /**
  * Price Alert model
- * 
- * Note: This is a placeholder model. In a real application, you would use
- * a database like MongoDB with Mongoose for schema definition.
+ *
+ * This model stores price alert configurations for EC2 instances.
  */
+const mongoose = require('mongoose');
+
+const priceAlertSchema = new mongoose.Schema({
+  instanceType: {
+    type: String,
+    required: true,
+    index: true
+  },
+  region: {
+    type: String,
+    required: true,
+    index: true
+  },
+  os: {
+    type: String,
+    required: true,
+    enum: ['Linux', 'Windows']
+  },
+  priceType: {
+    type: String,
+    required: true,
+    enum: ['onDemand', 'reserved', 'spot']
+  },
+  threshold: {
+    type: Number,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email address']
+  },
+  active: {
+    type: Boolean,
+    default: true
+  },
+  lastNotified: {
+    type: Date,
+    default: null
+  },
+  notificationCount: {
+    type: Number,
+    default: 0
+  }
+}, {
+  timestamps: true
+});
+
+// Create a compound index for efficient queries
+priceAlertSchema.index({ instanceType: 1, region: 1, priceType: 1, active: 1 });
 
 /**
- * Price Alert schema
- * @typedef {Object} PriceAlert
- * @property {string} instanceType - EC2 instance type
- * @property {string} region - AWS region ID
- * @property {string} os - Operating system (Linux/Windows)
- * @property {string} priceType - Price type (onDemand/reserved/spot)
- * @property {number} threshold - Price threshold
- * @property {string} email - Email address for notifications
- * @property {boolean} active - Whether the alert is active
+ * Static method to create a new price alert
+ * @param {Object} alertData - Alert data
+ * @returns {Promise<Object>} Created alert
  */
-
-/**
- * Create a new price alert
- * @param {PriceAlert} alertData - Alert data
- * @returns {Promise<PriceAlert>} Created alert
- */
-exports.create = async (alertData) => {
-  // In a real application, this would save to a database
-  // For now, we'll just return the data with a mock ID
-  return {
-    id: Date.now().toString(),
-    ...alertData,
-    createdAt: new Date().toISOString()
-  };
+priceAlertSchema.statics.create = async function(alertData) {
+  return this.create(alertData);
 };
 
 /**
- * Find all active price alerts
- * @returns {Promise<PriceAlert[]>} List of active alerts
+ * Static method to find all active price alerts
+ * @returns {Promise<Array>} List of active alerts
  */
-exports.findActive = async () => {
-  // In a real application, this would query a database
-  // For now, we'll return an empty array
-  return [];
+priceAlertSchema.statics.findActive = async function() {
+  return this.find({ active: true }).lean();
 };
 
 /**
- * Update a price alert
+ * Static method to update a price alert
  * @param {string} id - Alert ID
- * @param {Partial<PriceAlert>} updateData - Data to update
- * @returns {Promise<PriceAlert>} Updated alert
+ * @param {Object} updateData - Data to update
+ * @returns {Promise<Object>} Updated alert
  */
-exports.update = async (id, updateData) => {
-  // In a real application, this would update a database record
-  // For now, we'll just return the update data with the ID
-  return {
-    id,
-    ...updateData,
-    updatedAt: new Date().toISOString()
-  };
+priceAlertSchema.statics.update = async function(id, updateData) {
+  return this.findByIdAndUpdate(id, updateData, { new: true }).lean();
 };
 
 /**
- * Delete a price alert
+ * Static method to delete a price alert
  * @param {string} id - Alert ID
  * @returns {Promise<boolean>} Whether the alert was deleted
  */
-exports.delete = async (id) => {
-  // In a real application, this would delete from a database
-  // For now, we'll just return true
-  return true;
+priceAlertSchema.statics.delete = async function(id) {
+  const result = await this.findByIdAndDelete(id);
+  return !!result;
 };
+
+/**
+ * Static method to find alerts for a specific instance type and price
+ * @param {string} instanceType - EC2 instance type
+ * @param {string} region - AWS region ID
+ * @param {string} priceType - Price type (onDemand/reserved/spot)
+ * @param {number} currentPrice - Current price
+ * @returns {Promise<Array>} List of triggered alerts
+ */
+priceAlertSchema.statics.findTriggeredAlerts = async function(instanceType, region, priceType, currentPrice) {
+  return this.find({
+    instanceType,
+    region,
+    priceType,
+    active: true,
+    threshold: { $gte: currentPrice }
+  }).lean();
+};
+
+const PriceAlert = mongoose.model('PriceAlert', priceAlertSchema);
+
+module.exports = PriceAlert;

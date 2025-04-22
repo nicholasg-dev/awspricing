@@ -60,22 +60,7 @@ exports.getAlerts = async (req, res) => {
   }
 
   try {
-    // In a real application, this would query a database
-    // For now, we'll return mock data
-    const alerts = [
-      {
-        id: '1',
-        instanceType: 't3.micro',
-        region: 'us-east-1',
-        os: 'Linux',
-        priceType: 'spot',
-        threshold: 0.0035,
-        email,
-        active: true,
-        createdAt: new Date().toISOString()
-      }
-    ];
-
+    const alerts = await PriceAlert.find({ email });
     res.json(alerts);
   } catch (error) {
     console.error('Error getting price alerts:', error);

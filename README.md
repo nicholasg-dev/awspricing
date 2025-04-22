@@ -199,34 +199,103 @@ npm run lint:fix
 
 ## Testing
 
+### Backend Testing
+
+The backend uses Jest for unit and integration testing. Tests are located in the `backend/src/controllers/__tests__` and `backend/tests/integration` directories.
+
 Run backend tests:
 ```bash
 cd backend && npm test
 ```
+
+Run backend tests with coverage:
+```bash
+cd backend && npm run test:coverage
+```
+
+### Frontend Testing
+
+The frontend uses React Testing Library for component testing. Tests are located in the `frontend/src/components/__tests__` directory.
 
 Run frontend tests:
 ```bash
 cd frontend && npm test
 ```
 
+Run frontend tests with coverage:
+```bash
+cd frontend && npm run test:coverage
+```
+
 ## Deployment
 
-### AWS Deployment
+### Local Docker Deployment
 
-1. **Backend**: Deploy to AWS Elastic Beanstalk or EC2
-2. **Frontend**: Deploy to AWS S3 and CloudFront
+You can run the entire application locally using Docker Compose:
 
-### Docker Deployment
-
-Build the Docker image:
 ```bash
-docker build -t aws-pricing-tool .
+# Build and start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
 ```
 
-Run the Docker container:
+### AWS EKS Deployment
+
+This project is configured for deployment to AWS EKS (Elastic Kubernetes Service). The deployment process is automated using GitHub Actions.
+
+#### Prerequisites
+
+1. AWS CLI installed and configured with appropriate permissions
+2. kubectl installed
+3. helm installed
+
+#### Setting up EKS Cluster
+
+Run the setup script to create an EKS cluster:
+
 ```bash
-docker run -p 4000:4000 -d aws-pricing-tool
+chmod +x scripts/setup-eks.sh
+./scripts/setup-eks.sh
 ```
+
+#### Manual Deployment
+
+You can manually deploy the application to EKS using the deployment script:
+
+```bash
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh
+```
+
+#### CI/CD Pipeline
+
+The project includes a GitHub Actions workflow for CI/CD. When you push to the main branch, it will:
+
+1. Run tests for both backend and frontend
+2. Build Docker images
+3. Push images to Amazon ECR
+4. Deploy to EKS
+
+To set up the CI/CD pipeline, you need to add the following secrets to your GitHub repository:
+
+- `AWS_ACCESS_KEY_ID`: Your AWS access key
+- `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
+
+#### Kubernetes Resources
+
+The Kubernetes manifests are located in the `k8s` directory and include:
+
+- Namespace
+- ConfigMap and Secret for configuration
+- MongoDB StatefulSet and Service
+- Backend and Frontend Deployments and Services
+- Ingress for external access
+- HorizontalPodAutoscaler for scaling
 
 ## Contributing
 

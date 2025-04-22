@@ -3,6 +3,9 @@ const AWS = require('aws-sdk');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const { connectDB } = require('./src/utils/database');
+const cron = require('node-cron');
+const { initScheduledTasks } = require('./src/utils/scheduler');
 
 // Import routes
 const instanceRoutes = require('./src/routes/instanceRoutes');
@@ -13,6 +16,12 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Initialize Express app
 const app = express();
+
+// Connect to MongoDB
+connectDB().then(() => {
+  // Initialize scheduled tasks after DB connection
+  initScheduledTasks();
+});
 
 // Middleware
 app.use(cors());
@@ -58,14 +67,19 @@ console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`AWS Region: ${process.env.AWS_REGION || 'us-east-1'}`);
 console.log(`AWS Credentials: ${process.env.AWS_ACCESS_KEY_ID ? 'Configured' : 'Not configured'}`);
 
-// Start the server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log('Available endpoints:');
-    console.log(`- Health check: http://localhost:${PORT}/`);
-    console.log(`- Regions: http://localhost:${PORT}/api/regions`);
-    console.log(`- Instances: http://localhost:${PORT}/api/instances/:region`);
-    console.log(`- Price history: http://localhost:${PORT}/api/price-history/:region/:instanceType`);
-    console.log(`- Calculate savings: http://localhost:${PORT}/api/calculate-savings`);
-    console.log(`- Price alerts: http://localhost:${PORT}/api/price-alerts`);
-});
+// Start the server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log('Available endpoints:');
+        console.log(`- Health check: http://localhost:${PORT}/`);
+        console.log(`- Regions: http://localhost:${PORT}/api/regions`);
+        console.log(`- Instances: http://localhost:${PORT}/api/instances/:region`);
+        console.log(`- Price history: http://localhost:${PORT}/api/price-history/:region/:instanceType`);
+        console.log(`- Calculate savings: http://localhost:${PORT}/api/calculate-savings`);
+        console.log(`- Price alerts: http://localhost:${PORT}/api/price-alerts`);
+    });
+}
+
+// Export app for testing
+module.exports = app;
